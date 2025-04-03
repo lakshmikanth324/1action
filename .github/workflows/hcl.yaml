@@ -1,0 +1,28 @@
+name: run hcp
+on: push
+
+
+jobs:
+  job_id:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - id: 'Authenticate_to_HCP'
+        uses: 'hashicorp/hcp-auth-action@v0'
+        with:
+          workload_identity_provider: 'iam/project/123456789/service-principal/my-sp/workload-identity-provider/github'
+
+      - name: 'Download hcp CLI'
+        uses: 'hashicorp/hcp-setup-action@v0'
+        with:
+          version: 'latest'
+
+      - name: 'Use hcp CLI to read a secret'
+        run: |
+          MY_SECRET=$(hcp vault-secrets secrets open \
+            --app=cli --format=json foo | jq -r '.static_version.value')
+          echo "::add-mask::$MY_SECRET"
+          echo "MY_SECRET=$MY_SECRET" >> $GITHUB_ENV
